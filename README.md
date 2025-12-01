@@ -262,3 +262,42 @@ Then submit the GitHub repository link as instructed.
 - [Python Downloads](https://www.python.org/downloads/)
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 - [GitHub SSH Setup Guide](https://docs.github.com/en/authentication/connecting-to-github-with-ssh)
+
+## Module 9 — PostgreSQL & pgAdmin (FastAPI + Postgres)
+
+Follow these steps to satisfy the Module 9 assignment requirements.
+
+- **Start services:** Run the Docker Compose configuration that includes FastAPI (web), PostgreSQL (db), and pgAdmin (optional) from the project root:
+
+```bash
+docker-compose up --build
+```
+
+- **Access pgAdmin:** Open `http://localhost:5050` in your browser. Use the credentials defined in the Compose file (if present). If your compose file exposes pgAdmin on a different port, use that port instead.
+
+- **Connect to the database:** In pgAdmin create/connect to a server using:
+   - Host: `db` (or `localhost` if using port forwarding)
+   - User: `postgres` (or the user defined in `docker-compose.yml`)
+   - Database: the database defined in Compose (commonly `fastapi_db`)
+
+- **SQL files:** The repository includes SQL scripts you can run in pgAdmin Query Tool or via `psql`:
+   - `sql/create_tables.sql` — create `users` and `calculations` tables
+   - `sql/insert_data.sql` — insert sample rows
+   - `sql/queries.sql` — run SELECT and JOIN queries
+   - `sql/update_delete.sql` — examples of UPDATE and DELETE statements
+
+- **Execution tips:**
+   - In pgAdmin open the Query Tool, paste the contents of a script, and click the run button.
+   - After each run, take a screenshot of the Query Tool results showing the "Query returned successfully" message (or rows displayed).
+
+- **Documentation / Submission:** Create a Word document or PDF compiling the screenshots. For each screenshot include a short caption (one sentence) describing what the screenshot shows (e.g., "Created tables: users and calculations — 2 rows affected"). Include a short reflection (1–2 paragraphs) about challenges and what you learned.
+
+If you want to run the SQL scripts directly from the host using `psql` and Docker, you can (alternative to pgAdmin):
+
+```bash
+# Run the create script inside the running postgres container (replace container name if different)
+docker exec -i $(docker ps -qf "name=db") psql -U postgres -d postgres < sql/create_tables.sql
+```
+
+Replace `postgres` with the target database name if different.
+
