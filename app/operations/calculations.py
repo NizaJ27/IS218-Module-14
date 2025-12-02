@@ -18,7 +18,7 @@ def compute_result(calc_in: schemas.CalculationCreate) -> float:
     raise ValueError("Unsupported calculation type")
 
 
-def create_calculation(db: Session, calc_in: schemas.CalculationCreate, store_result: bool = True) -> models.Calculation:
+def create_calculation(db: Session, calc_in: schemas.CalculationCreate, user_id: Optional[int] = None, store_result: bool = True) -> models.Calculation:
     result = None
     if store_result:
         result = compute_result(calc_in)
@@ -28,6 +28,7 @@ def create_calculation(db: Session, calc_in: schemas.CalculationCreate, store_re
         b=calc_in.b,
         type=calc_in.type,
         result=result,
+        user_id=user_id,
     )
     db.add(calc)
     try:
@@ -39,19 +40,25 @@ def create_calculation(db: Session, calc_in: schemas.CalculationCreate, store_re
     return calc
 
 
-def get_all_calculations(db: Session, skip: int = 0, limit: int = 100) -> List[models.Calculation]:
-    """Browse all calculations with pagination."""
-    return db.query(models.Calculation).offset(skip).limit(limit).all()
+def get_all_calculations(db: Session, user_id: Optional[int] = None, skip: int = 0, limit: int = 100) -> List[models.Calculation]:
+    """Browse all calculations with pagination. If user_id is provided, filter by user."""
+    query = db.query(models.Calculation)
+    if user_id is not None:
+        query = query.filter(models.Calculation.user_id == user_id)
+    return query.offset(skip).limit(limit).all()
 
 
-def get_calculation_by_id(db: Session, calc_id: int) -> Optional[models.Calculation]:
-    """Read a specific calculation by ID."""
-    return db.query(models.Calculation).filter(models.Calculation.id == calc_id).first()
+def get_calculation_by_id(db: Session, calc_id: int, user_id: Optional[int] = None) -> Optional[models.Calculation]:
+    """Read a specific calculation by ID. If user_id is provided, verify ownership."""
+    query = db.query(models.Calculation).filter(models.Calculation.id == calc_id)
+    if user_id is not None:
+        query = query.filter(models.Calculation.user_id == user_id)
+    return query.first()
 
 
-def update_calculation(db: Session, calc_id: int, calc_in: schemas.CalculationCreate) -> Optional[models.Calculation]:
-    """Edit an existing calculation."""
-    calc = get_calculation_by_id(db, calc_id)
+def update_calculation(db: Session, calc_id: int, calc_in: schemas.CalculationCreate, user_id: Optional[int] = None) -> Optional[models.Calculation]:
+    """Edit an existing calculation. If user_id is provided, verify ownership."""
+    calc = get_calculation_by_id(db, calc_id, user_id)
     if not calc:
         return None
     
@@ -70,9 +77,9 @@ def update_calculation(db: Session, calc_id: int, calc_in: schemas.CalculationCr
     return calc
 
 
-def delete_calculation(db: Session, calc_id: int) -> bool:
-    """Delete a calculation by ID. Returns True if deleted, False if not found."""
-    calc = get_calculation_by_id(db, calc_id)
+def delete_calculation(db: Session, calc_id: int, user_id: Optional[int] = None) -> bool:
+    """Delete a calculation by ID. Returns True if deleted, False if not found. If user_id is provided, verify ownership."""
+    calc = get_calculation_by_id(db, calc_id, user_id)
     if not calc:
         return False
     

@@ -1,6 +1,6 @@
 # main.py
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Depends, Header
 from fastapi.responses import JSONResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field, field_validator  # Use @validator for Pydantic 1.x
@@ -10,9 +10,10 @@ from app.db import init_db, SessionLocal
 from app.operations import users as user_ops
 from app.operations import calculations as calc_ops
 from app import schemas
-from app.security import create_access_token
+from app.security import create_access_token, verify_token
 import uvicorn
 import logging
+from typing import Optional
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -22,6 +23,30 @@ app = FastAPI()
 
 # Setup templates directory
 templates = Jinja2Templates(directory="templates")
+
+
+# JWT Authentication Dependency
+def get_current_user(authorization: Optional[str] = Header(None)) -> dict:
+    """
+    Extract and verify JWT token from Authorization header.
+    Returns user data from token payload.
+    Raises 401 if token is missing or invalid.
+    """
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Authorization header missing")
+    
+    # Expected format: "Bearer <token>"
+    parts = authorization.split()
+    if len(parts) != 2 or parts[0].lower() != "bearer":
+        raise HTTPException(status_code=401, detail="Invalid authorization header format")
+    
+    token = parts[1]
+    payload = verify_token(token)
+    
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+    
+    return payload
 
 # Pydantic model for request data
 class OperationRequest(BaseModel):
@@ -175,11 +200,12 @@ def login_user(user_login: schemas.UserLogin):
 # ========== Calculation Endpoints (BREAD) ==========
 
 @app.post("/calculations", response_model=schemas.CalculationRead)
-def create_calculation(calc_in: schemas.CalculationCreate):
-    """Add a new calculation."""
+def create_calculation(calc_in: schemas.CalculationCreate, current_user: dict = Depends(get_current_user)):
+    """Add a new calculation for the logged-in user."""
     db = SessionLocal()
     try:
-        calc = calc_ops.create_calculation(db, calc_in, store_result=True)
+        user_id = current_user.get("user_id")
+        calc = calc_ops.create_calculation(db, calc_in, user_id=user_id, store_result=True)
         return calc
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -188,22 +214,24 @@ def create_calculation(calc_in: schemas.CalculationCreate):
 
 
 @app.get("/calculations", response_model=list[schemas.CalculationRead])
-def browse_calculations(skip: int = 0, limit: int = 100):
-    """Browse all calculations with pagination."""
+def browse_calculations(skip: int = 0, limit: int = 100, current_user: dict = Depends(get_current_user)):
+    """Browse all calculations for the logged-in user with pagination."""
     db = SessionLocal()
     try:
-        calcs = calc_ops.get_all_calculations(db, skip=skip, limit=limit)
+        user_id = current_user.get("user_id")
+        calcs = calc_ops.get_all_calculations(db, user_id=user_id, skip=skip, limit=limit)
         return calcs
     finally:
         db.close()
 
 
 @app.get("/calculations/{calc_id}", response_model=schemas.CalculationRead)
-def read_calculation(calc_id: int):
-    """Read a specific calculation by ID."""
+def read_calculation(calc_id: int, current_user: dict = Depends(get_current_user)):
+    """Read a specific calculation by ID for the logged-in user."""
     db = SessionLocal()
     try:
-        calc = calc_ops.get_calculation_by_id(db, calc_id)
+        user_id = current_user.get("user_id")
+        calc = calc_ops.get_calculation_by_id(db, calc_id, user_id=user_id)
         if not calc:
             raise HTTPException(status_code=404, detail="Calculation not found")
         return calc
@@ -212,11 +240,12 @@ def read_calculation(calc_id: int):
 
 
 @app.put("/calculations/{calc_id}", response_model=schemas.CalculationRead)
-def update_calculation(calc_id: int, calc_in: schemas.CalculationCreate):
-    """Edit an existing calculation."""
+def update_calculation(calc_id: int, calc_in: schemas.CalculationCreate, current_user: dict = Depends(get_current_user)):
+    """Edit an existing calculation for the logged-in user."""
     db = SessionLocal()
     try:
-        calc = calc_ops.update_calculation(db, calc_id, calc_in)
+        user_id = current_user.get("user_id")
+        calc = calc_ops.update_calculation(db, calc_id, calc_in, user_id=user_id)
         if not calc:
             raise HTTPException(status_code=404, detail="Calculation not found")
         return calc
@@ -227,11 +256,12 @@ def update_calculation(calc_id: int, calc_in: schemas.CalculationCreate):
 
 
 @app.delete("/calculations/{calc_id}")
-def delete_calculation(calc_id: int):
-    """Delete a calculation by ID."""
+def delete_calculation(calc_id: int, current_user: dict = Depends(get_current_user)):
+    """Delete a calculation by ID for the logged-in user."""
     db = SessionLocal()
     try:
-        deleted = calc_ops.delete_calculation(db, calc_id)
+        user_id = current_user.get("user_id")
+        deleted = calc_ops.delete_calculation(db, calc_id, user_id=user_id)
         if not deleted:
             raise HTTPException(status_code=404, detail="Calculation not found")
         return {"message": "Calculation deleted successfully"}
