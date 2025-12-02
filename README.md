@@ -263,7 +263,133 @@ Then submit the GitHub repository link as instructed.
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 - [GitHub SSH Setup Guide](https://docs.github.com/en/authentication/connecting-to-github-with-ssh)
 
-## Running Tests Locally
+## Module 13 — JWT Authentication with Front-End and E2E Testing
+
+This module implements JWT-based authentication for user registration and login, including front-end pages and comprehensive Playwright E2E tests.
+
+### Features Implemented
+
+- **JWT Authentication**:
+  - POST `/users/register` - Register new users and receive JWT token
+  - POST `/users/login` - Authenticate users and receive JWT token
+  - Password hashing with passlib
+  - Token generation and verification with python-jose
+
+- **Front-End Pages**:
+  - GET `/register` - Registration page with client-side validation
+  - GET `/login` - Login page with client-side validation
+  - Email format validation
+  - Password length validation (minimum 6 characters)
+  - Password confirmation matching
+  - JWT token storage in localStorage
+
+- **Playwright E2E Tests**:
+  - Positive tests: Valid registration and login
+  - Negative tests: Short passwords, invalid emails, wrong credentials
+  - UI feedback verification
+  - Server response validation
+
+### Running the Front-End
+
+1. **Install dependencies**:
+```bash
+pip install -r requirements.txt
+```
+
+2. **Start the FastAPI server**:
+```bash
+python main.py
+```
+
+3. **Access the application**:
+   - Home page: `http://localhost:8000`
+   - Registration: `http://localhost:8000/register`
+   - Login: `http://localhost:8000/login`
+
+### Running Playwright E2E Tests
+
+1. **Install Playwright browsers**:
+```bash
+playwright install --with-deps chromium
+```
+
+2. **Run E2E tests**:
+```bash
+pytest tests/e2e/ -v
+```
+
+3. **Run all tests**:
+```bash
+pytest -v
+```
+
+### Docker Hub Repository
+
+**Docker Hub Link**: [https://hub.docker.com/r/YOUR_USERNAME/is218-module-13](https://hub.docker.com/r/YOUR_USERNAME/is218-module-13)
+
+*Note: Replace `YOUR_USERNAME` with your actual Docker Hub username.*
+
+### Pulling and Running the Docker Image
+
+```bash
+docker pull YOUR_USERNAME/is218-module-13:latest
+docker run -p 8000:8000 YOUR_USERNAME/is218-module-13:latest
+```
+
+### CI/CD Pipeline
+
+The GitHub Actions workflow (`.github/workflows/ci.yml`) automatically:
+1. Spins up PostgreSQL database
+2. Runs unit and integration tests
+3. Installs Playwright and runs E2E tests
+4. Builds and pushes Docker image to Docker Hub (on success)
+
+### Testing the Authentication Flow
+
+#### Using the Web Interface:
+
+1. **Register a new user**:
+   - Navigate to `/register`
+   - Fill in username (3-50 chars), valid email, password (6+ chars)
+   - Confirm password
+   - Submit form
+   - Token will be stored in localStorage
+
+2. **Login**:
+   - Navigate to `/login`
+   - Enter username and password
+   - Submit form
+   - Token will be stored in localStorage
+
+#### Using the API Directly:
+
+**Register**:
+```bash
+curl -X POST http://localhost:8000/users/register \
+  -H "Content-Type: application/json" \
+  -d '{"username":"testuser","email":"test@example.com","password":"password123"}'
+```
+
+**Login**:
+```bash
+curl -X POST http://localhost:8000/users/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"testuser","password":"password123"}'
+```
+
+Both endpoints return a JWT token in the format:
+```json
+{
+  "access_token": "eyJ0eXAiOiJKV1QiLCJhbGc...",
+  "token_type": "bearer"
+}
+```
+
+---
+
+## Previous Modules
+
+### Module 12 — User & Calculation CRUD with Integration Tests
 
 Install dependencies and run pytest:
 
