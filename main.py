@@ -10,6 +10,7 @@ from app.db import init_db, SessionLocal
 from app.operations import users as user_ops
 from app.operations import calculations as calc_ops
 from app import schemas
+from app.security import create_access_token
 import uvicorn
 import logging
 
@@ -126,28 +127,36 @@ if __name__ == "__main__":
 
 # ========== User Endpoints ==========
 
-@app.post("/users/register", response_model=schemas.UserRead)
+@app.post("/users/register", response_model=schemas.Token)
 def register_user(user_in: schemas.UserCreate):
-    """Register a new user. Returns the created user without password."""
+    """Register a new user. Returns a JWT access token."""
     db = SessionLocal()
     try:
         user = user_ops.create_user(db, user_in)
-        return user
+        # Create JWT token with user information
+        access_token = create_access_token(
+            data={"sub": user.username, "user_id": user.id, "email": user.email}
+        )
+        return schemas.Token(access_token=access_token, token_type="bearer")
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     finally:
         db.close()
 
 
-@app.post("/users/login", response_model=schemas.UserRead)
+@app.post("/users/login", response_model=schemas.Token)
 def login_user(user_login: schemas.UserLogin):
-    """Login a user by verifying username and password."""
+    """Login a user by verifying username and password. Returns a JWT access token."""
     db = SessionLocal()
     try:
         user = user_ops.authenticate_user(db, user_login.username, user_login.password)
         if not user:
             raise HTTPException(status_code=401, detail="Invalid username or password")
-        return user
+        # Create JWT token with user information
+        access_token = create_access_token(
+            data={"sub": user.username, "user_id": user.id, "email": user.email}
+        )
+        return schemas.Token(access_token=access_token, token_type="bearer")
     finally:
         db.close()
 

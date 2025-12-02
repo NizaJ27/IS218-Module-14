@@ -25,6 +25,11 @@ class UserRead(BaseModel):
         orm_mode = True
 
 
+class Token(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+
+
 class CalculationCreate(BaseModel):
     a: float = Field(...)
     b: float = Field(...)
