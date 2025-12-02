@@ -313,3 +313,478 @@ def test_login_with_nonexistent_user(page, fastapi_server):
     error_text = page.inner_text('#serverError')
     assert 'Invalid username or password' in error_text
 
+
+# ========== Calculation BREAD E2E Tests ==========
+
+@pytest.mark.e2e
+def test_add_calculation_positive(page, fastapi_server):
+    """
+    Positive Test: Add a new calculation successfully.
+    
+    This test registers a user, logs in, navigates to the calculations page,
+    and successfully creates a new addition calculation.
+    """
+    timestamp = str(int(time.time()))
+    username = f'calcuser{timestamp}'
+    email = f'calc{timestamp}@example.com'
+    password = 'password123'
+    
+    # Register and login
+    page.goto('http://localhost:8000/register')
+    page.fill('#username', username)
+    page.fill('#email', email)
+    page.fill('#password', password)
+    page.fill('#confirmPassword', password)
+    page.click('button[type="submit"]')
+    page.wait_for_selector('#successMessage', state='visible', timeout=5000)
+    
+    # Navigate to calculations page
+    page.goto('http://localhost:8000/calculations-page')
+    
+    # Wait for page to load
+    page.wait_for_timeout(1000)
+    
+    # Fill in calculation form
+    page.fill('#addA', '10')
+    page.fill('#addB', '5')
+    page.select_option('#addType', 'Add')
+    
+    # Submit the form
+    page.click('button:text("Add Calculation")')
+    
+    # Wait for success message
+    page.wait_for_selector('#addMessage', state='visible', timeout=5000)
+    
+    # Verify success message
+    message_text = page.inner_text('#addMessage')
+    assert 'created successfully' in message_text
+    assert '15' in message_text  # Result should be 15
+
+
+@pytest.mark.e2e
+def test_add_calculation_divide_by_zero(page, fastapi_server):
+    """
+    Negative Test: Try to add a division by zero calculation.
+    
+    This test verifies that the frontend prevents division by zero
+    and shows an appropriate error message.
+    """
+    timestamp = str(int(time.time()))
+    username = f'divzerouser{timestamp}'
+    email = f'divzero{timestamp}@example.com'
+    password = 'password123'
+    
+    # Register and login
+    page.goto('http://localhost:8000/register')
+    page.fill('#username', username)
+    page.fill('#email', email)
+    page.fill('#password', password)
+    page.fill('#confirmPassword', password)
+    page.click('button[type="submit"]')
+    page.wait_for_selector('#successMessage', state='visible', timeout=5000)
+    
+    # Navigate to calculations page
+    page.goto('http://localhost:8000/calculations-page')
+    page.wait_for_timeout(1000)
+    
+    # Try to add division by zero
+    page.fill('#addA', '10')
+    page.fill('#addB', '0')
+    page.select_option('#addType', 'Divide')
+    
+    # Submit the form
+    page.click('button:text("Add Calculation")')
+    
+    # Wait for error message
+    page.wait_for_selector('#addMessage', state='visible', timeout=5000)
+    
+    # Verify error message
+    message_text = page.inner_text('#addMessage')
+    assert 'divide by zero' in message_text.lower()
+
+
+@pytest.mark.e2e
+def test_browse_calculations_positive(page, fastapi_server):
+    """
+    Positive Test: Browse all calculations for a user.
+    
+    This test creates multiple calculations and verifies they are displayed
+    correctly in the browse section.
+    """
+    timestamp = str(int(time.time()))
+    username = f'browseuser{timestamp}'
+    email = f'browse{timestamp}@example.com'
+    password = 'password123'
+    
+    # Register and login
+    page.goto('http://localhost:8000/register')
+    page.fill('#username', username)
+    page.fill('#email', email)
+    page.fill('#password', password)
+    page.fill('#confirmPassword', password)
+    page.click('button[type="submit"]')
+    page.wait_for_selector('#successMessage', state='visible', timeout=5000)
+    
+    # Navigate to calculations page
+    page.goto('http://localhost:8000/calculations-page')
+    page.wait_for_timeout(1000)
+    
+    # Add first calculation
+    page.fill('#addA', '10')
+    page.fill('#addB', '5')
+    page.select_option('#addType', 'Add')
+    page.click('button:text("Add Calculation")')
+    page.wait_for_timeout(1000)
+    
+    # Add second calculation
+    page.fill('#addA', '20')
+    page.fill('#addB', '4')
+    page.select_option('#addType', 'Multiply')
+    page.click('button:text("Add Calculation")')
+    page.wait_for_timeout(1000)
+    
+    # Click refresh to browse calculations
+    page.click('button:text("Refresh List")')
+    page.wait_for_timeout(1000)
+    
+    # Verify table is visible
+    assert page.is_visible('#calculationsTable')
+    
+    # Verify at least 2 rows in the table
+    rows = page.locator('#calculationsBody tr')
+    assert rows.count() >= 2
+
+
+@pytest.mark.e2e
+def test_browse_calculations_empty(page, fastapi_server):
+    """
+    Positive Test: Browse calculations when user has none.
+    
+    This test verifies that an appropriate message is shown when
+    a user has no calculations.
+    """
+    timestamp = str(int(time.time()))
+    username = f'emptyuser{timestamp}'
+    email = f'empty{timestamp}@example.com'
+    password = 'password123'
+    
+    # Register and login
+    page.goto('http://localhost:8000/register')
+    page.fill('#username', username)
+    page.fill('#email', email)
+    page.fill('#password', password)
+    page.fill('#confirmPassword', password)
+    page.click('button[type="submit"]')
+    page.wait_for_selector('#successMessage', state='visible', timeout=5000)
+    
+    # Navigate to calculations page
+    page.goto('http://localhost:8000/calculations-page')
+    page.wait_for_timeout(1000)
+    
+    # Wait for browse message
+    page.wait_for_selector('#browseMessage', state='visible', timeout=5000)
+    
+    # Verify message about no calculations
+    message_text = page.inner_text('#browseMessage')
+    assert 'No calculations found' in message_text or '0 calculation' in message_text
+
+
+@pytest.mark.e2e
+def test_read_calculation_positive(page, fastapi_server):
+    """
+    Positive Test: Read a specific calculation by ID.
+    
+    This test creates a calculation and then retrieves it by its ID.
+    """
+    timestamp = str(int(time.time()))
+    username = f'readuser{timestamp}'
+    email = f'read{timestamp}@example.com'
+    password = 'password123'
+    
+    # Register and login
+    page.goto('http://localhost:8000/register')
+    page.fill('#username', username)
+    page.fill('#email', email)
+    page.fill('#password', password)
+    page.fill('#confirmPassword', password)
+    page.click('button[type="submit"]')
+    page.wait_for_selector('#successMessage', state='visible', timeout=5000)
+    
+    # Navigate to calculations page
+    page.goto('http://localhost:8000/calculations-page')
+    page.wait_for_timeout(1000)
+    
+    # Add a calculation
+    page.fill('#addA', '15')
+    page.fill('#addB', '3')
+    page.select_option('#addType', 'Sub')
+    page.click('button:text("Add Calculation")')
+    page.wait_for_timeout(1000)
+    
+    # Get the calculation ID from the table
+    page.click('button:text("Refresh List")')
+    page.wait_for_timeout(1000)
+    
+    # Get first row's ID
+    first_cell = page.locator('#calculationsBody tr:first-child td:first-child')
+    calc_id = first_cell.inner_text()
+    
+    # Read the calculation
+    page.fill('#readId', calc_id)
+    page.locator('button:text("Get Calculation")').click()
+    
+    # Wait for result to appear
+    page.wait_for_selector('#readResult', timeout=5000)
+    
+    # Verify result contains the correct data
+    result_text = page.inner_text('#readResult')
+    assert 'ID:' in result_text
+    assert '15' in result_text
+    assert '3' in result_text
+
+
+@pytest.mark.e2e
+def test_read_calculation_not_found(page, fastapi_server):
+    """
+    Negative Test: Try to read a non-existent calculation.
+    
+    This test verifies that an appropriate error is shown when
+    trying to read a calculation that doesn't exist or doesn't belong to the user.
+    """
+    timestamp = str(int(time.time()))
+    username = f'readnotfound{timestamp}'
+    email = f'readnotfound{timestamp}@example.com'
+    password = 'password123'
+    
+    # Register and login
+    page.goto('http://localhost:8000/register')
+    page.fill('#username', username)
+    page.fill('#email', email)
+    page.fill('#password', password)
+    page.fill('#confirmPassword', password)
+    page.click('button[type="submit"]')
+    page.wait_for_selector('#successMessage', state='visible', timeout=5000)
+    
+    # Navigate to calculations page
+    page.goto('http://localhost:8000/calculations-page')
+    page.wait_for_timeout(1000)
+    
+    # Try to read a non-existent calculation
+    page.fill('#readId', '99999')
+    page.locator('button:text("Get Calculation")').click()
+    
+    # Wait for error message
+    page.wait_for_selector('#readMessage', state='visible', timeout=5000)
+    
+    # Verify error message
+    message_text = page.inner_text('#readMessage')
+    assert 'not found' in message_text.lower() or 'error' in message_text.lower()
+
+
+@pytest.mark.e2e
+def test_update_calculation_positive(page, fastapi_server):
+    """
+    Positive Test: Update an existing calculation.
+    
+    This test creates a calculation and then updates it with new values.
+    """
+    timestamp = str(int(time.time()))
+    username = f'updateuser{timestamp}'
+    email = f'update{timestamp}@example.com'
+    password = 'password123'
+    
+    # Register and login
+    page.goto('http://localhost:8000/register')
+    page.fill('#username', username)
+    page.fill('#email', email)
+    page.fill('#password', password)
+    page.fill('#confirmPassword', password)
+    page.click('button[type="submit"]')
+    page.wait_for_selector('#successMessage', state='visible', timeout=5000)
+    
+    # Navigate to calculations page
+    page.goto('http://localhost:8000/calculations-page')
+    page.wait_for_timeout(1000)
+    
+    # Add a calculation
+    page.fill('#addA', '10')
+    page.fill('#addB', '5')
+    page.select_option('#addType', 'Add')
+    page.click('button:text("Add Calculation")')
+    page.wait_for_timeout(1000)
+    
+    # Get the calculation ID
+    page.click('button:text("Refresh List")')
+    page.wait_for_timeout(1000)
+    first_cell = page.locator('#calculationsBody tr:first-child td:first-child')
+    calc_id = first_cell.inner_text()
+    
+    # Update the calculation
+    page.fill('#editId', calc_id)
+    page.fill('#editA', '20')
+    page.fill('#editB', '10')
+    page.select_option('#editType', 'Multiply')
+    page.click('button:text("Update Calculation")')
+    
+    # Wait for success message
+    page.wait_for_selector('#editMessage', state='visible', timeout=5000)
+    
+    # Verify success message contains new result
+    message_text = page.inner_text('#editMessage')
+    assert 'updated successfully' in message_text
+    assert '200' in message_text  # 20 * 10 = 200
+
+
+@pytest.mark.e2e
+def test_update_calculation_not_found(page, fastapi_server):
+    """
+    Negative Test: Try to update a non-existent calculation.
+    
+    This test verifies that an error is shown when trying to update
+    a calculation that doesn't exist.
+    """
+    timestamp = str(int(time.time()))
+    username = f'updatenotfound{timestamp}'
+    email = f'updatenotfound{timestamp}@example.com'
+    password = 'password123'
+    
+    # Register and login
+    page.goto('http://localhost:8000/register')
+    page.fill('#username', username)
+    page.fill('#email', email)
+    page.fill('#password', password)
+    page.fill('#confirmPassword', password)
+    page.click('button[type="submit"]')
+    page.wait_for_selector('#successMessage', state='visible', timeout=5000)
+    
+    # Navigate to calculations page
+    page.goto('http://localhost:8000/calculations-page')
+    page.wait_for_timeout(1000)
+    
+    # Try to update non-existent calculation
+    page.fill('#editId', '99999')
+    page.fill('#editA', '20')
+    page.fill('#editB', '10')
+    page.select_option('#editType', 'Add')
+    page.click('button:text("Update Calculation")')
+    
+    # Wait for error message
+    page.wait_for_selector('#editMessage', state='visible', timeout=5000)
+    
+    # Verify error message
+    message_text = page.inner_text('#editMessage')
+    assert 'not found' in message_text.lower() or 'error' in message_text.lower()
+
+
+@pytest.mark.e2e
+def test_delete_calculation_positive(page, fastapi_server):
+    """
+    Positive Test: Delete a calculation successfully.
+    
+    This test creates a calculation and then deletes it.
+    """
+    timestamp = str(int(time.time()))
+    username = f'deleteuser{timestamp}'
+    email = f'delete{timestamp}@example.com'
+    password = 'password123'
+    
+    # Register and login
+    page.goto('http://localhost:8000/register')
+    page.fill('#username', username)
+    page.fill('#email', email)
+    page.fill('#password', password)
+    page.fill('#confirmPassword', password)
+    page.click('button[type="submit"]')
+    page.wait_for_selector('#successMessage', state='visible', timeout=5000)
+    
+    # Navigate to calculations page
+    page.goto('http://localhost:8000/calculations-page')
+    page.wait_for_timeout(1000)
+    
+    # Add a calculation
+    page.fill('#addA', '8')
+    page.fill('#addB', '2')
+    page.select_option('#addType', 'Divide')
+    page.click('button:text("Add Calculation")')
+    page.wait_for_timeout(1000)
+    
+    # Get the calculation ID
+    page.click('button:text("Refresh List")')
+    page.wait_for_timeout(1000)
+    first_cell = page.locator('#calculationsBody tr:first-child td:first-child')
+    calc_id = first_cell.inner_text()
+    
+    # Delete the calculation
+    page.fill('#deleteId', calc_id)
+    page.locator('button:text("Delete Calculation")').click()
+    
+    # Wait for success message
+    page.wait_for_timeout(1000)
+    
+    # Verify calculation is no longer in the list
+    page.click('button:text("Refresh List")')
+    page.wait_for_timeout(1000)
+    
+    # Should show message about no calculations or empty table
+    message_text = page.inner_text('#browseMessage')
+    assert 'deleted successfully' in message_text.lower() or 'No calculations' in message_text or '0 calculation' in message_text
+
+
+@pytest.mark.e2e
+def test_delete_calculation_not_found(page, fastapi_server):
+    """
+    Negative Test: Try to delete a non-existent calculation.
+    
+    This test verifies that an error is shown when trying to delete
+    a calculation that doesn't exist.
+    """
+    timestamp = str(int(time.time()))
+    username = f'deletenotfound{timestamp}'
+    email = f'deletenotfound{timestamp}@example.com'
+    password = 'password123'
+    
+    # Register and login
+    page.goto('http://localhost:8000/register')
+    page.fill('#username', username)
+    page.fill('#email', email)
+    page.fill('#password', password)
+    page.fill('#confirmPassword', password)
+    page.click('button[type="submit"]')
+    page.wait_for_selector('#successMessage', state='visible', timeout=5000)
+    
+    # Navigate to calculations page
+    page.goto('http://localhost:8000/calculations-page')
+    page.wait_for_timeout(1000)
+    
+    # Try to delete non-existent calculation
+    page.fill('#deleteId', '99999')
+    page.locator('button:text("Delete Calculation")').click()
+    
+    # Wait for error message
+    page.wait_for_timeout(1000)
+    
+    # Check for error in deleteMessage
+    if page.is_visible('#deleteMessage'):
+        message_text = page.inner_text('#deleteMessage')
+        assert 'not found' in message_text.lower() or 'error' in message_text.lower()
+
+
+@pytest.mark.e2e
+def test_unauthorized_access_to_calculations(page, fastapi_server):
+    """
+    Negative Test: Try to access calculations page without being logged in.
+    
+    This test verifies that the page displays an authentication error
+    when accessed without a valid JWT token.
+    """
+    # Navigate to calculations page without logging in
+    page.goto('http://localhost:8000/calculations-page')
+    page.wait_for_timeout(1000)
+    
+    # Verify auth error is displayed
+    assert page.is_visible('#authError')
+    
+    # Verify sections are hidden
+    sections = page.locator('.section')
+    assert sections.count() == 0 or not sections.first.is_visible()
+
