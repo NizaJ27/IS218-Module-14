@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>My Calculations</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        h1, h2 {
+            color: #333;
+        }
+        
+        .nav {
+            margin-bottom: 30px;
+            padding: 10px;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+        }
+        
+        .nav a {
+            margin-right: 15px;
+            text-decoration: none;
+            color: #0066cc;
+        }
+        
+        .nav a:hover {
+            text-decoration: underline;
+        }
+        
+        .section {
+            margin-bottom: 40px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: inline-block;
+            width: 120px;
+            font-weight: bold;
+        }
+        
+        input, select, button {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+        }
+        
+        input[type="number"], select {
+            width: 200px;
+        }
+        
+        button {
+            background-color: #0066cc;
+            color: white;
+            border: none;
+            cursor: pointer;
+            padding: 10px 20px;
+        }
+        
+        button:hover {
+            background-color: #0052a3;
+        }
+        
+        .error {
+            color: red;
+            font-size: 12px;
+            margin-left: 125px;
+        }
+        
+        .message {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 3px;
+        }
+        
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .error-message {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+            background-color: #0066cc;
+            color: white;
+        }
+        
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .action-btn {
+            padding: 5px 10px;
+            margin-right: 5px;
+            font-size: 12px;
+        }
+        
+        .delete-btn {
+            background-color: #dc3545;
+        }
+        
+        .delete-btn:hover {
+            background-color: #c82333;
+        }
+        
+        .edit-btn {
+            background-color: #ffc107;
+        }
+        
+        .edit-btn:hover {
+            background-color: #e0a800;
+        }
+    </style>
+</head>
+<body>
+    <div class="nav">
+        <a href="/">Home</a>
+        <a href="/login">Login</a>
+        <a href="/register">Register</a>
+        <a href="#" onclick="logout()">Logout</a>
+    </div>
+
+    <h1>My Calculations</h1>
+    
+    <div id="authError" class="message error-message" style="display: none;">
+        Please login to access this page.
+    </div>
+
+    <!-- Add New Calculation Section -->
+    <div class="section">
+        <h2>Add New Calculation</h2>
+        <form id="addForm" onsubmit="addCalculation(event)">
+            <div class="form-group">
+                <label for="addA">First Number:</label>
+                <input type="number" id="addA" step="any" required>
+                <span id="addAError" class="error"></span>
+            </div>
+            <div class="form-group">
+                <label for="addB">Second Number:</label>
+                <input type="number" id="addB" step="any" required>
+                <span id="addBError" class="error"></span>
+            </div>
+            <div class="form-group">
+                <label for="addType">Operation:</label>
+                <select id="addType" required>
+                    <option value="Add">Add</option>
+                    <option value="Sub">Subtract</option>
+                    <option value="Multiply">Multiply</option>
+                    <option value="Divide">Divide</option>
+                </select>
+            </div>
+            <button type="submit">Add Calculation</button>
+        </form>
+        <div id="addMessage" class="message" style="display: none;"></div>
+    </div>
+
+    <!-- Browse All Calculations Section -->
+    <div class="section">
+        <h2>Browse All Calculations</h2>
+        <button onclick="browseCalculations()">Refresh List</button>
+        <div id="browseMessage" class="message" style="display: none;"></div>
+        <table id="calculationsTable" style="display: none;">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>First Number</th>
+                    <th>Second Number</th>
+                    <th>Operation</th>
+                    <th>Result</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="calculationsBody"></tbody>
+        </table>
+    </div>
+
+    <!-- Read Specific Calculation Section -->
+    <div class="section">
+        <h2>Read Specific Calculation</h2>
+        <form onsubmit="readCalculation(event)">
+            <div class="form-group">
+                <label for="readId">Calculation ID:</label>
+                <input type="number" id="readId" required min="1">
+            </div>
+            <button type="submit">Get Calculation</button>
+        </form>
+        <div id="readMessage" class="message" style="display: none;"></div>
+        <div id="readResult" style="margin-top: 15px;"></div>
+    </div>
+
+    <!-- Edit Calculation Section -->
+    <div class="section">
+        <h2>Edit Calculation</h2>
+        <form id="editForm" onsubmit="updateCalculation(event)">
+            <div class="form-group">
+                <label for="editId">Calculation ID:</label>
+                <input type="number" id="editId" required min="1">
+            </div>
+            <div class="form-group">
+                <label for="editA">First Number:</label>
+                <input type="number" id="editA" step="any" required>
+            </div>
+            <div class="form-group">
+                <label for="editB">Second Number:</label>
+                <input type="number" id="editB" step="any" required>
+            </div>
+            <div class="form-group">
+                <label for="editType">Operation:</label>
+                <select id="editType" required>
+                    <option value="Add">Add</option>
+                    <option value="Sub">Subtract</option>
+                    <option value="Multiply">Multiply</option>
+                    <option value="Divide">Divide</option>
+                </select>
+            </div>
+            <button type="submit">Update Calculation</button>
+        </form>
+        <div id="editMessage" class="message" style="display: none;"></div>
+    </div>
+
+    <!-- Delete Calculation Section -->
+    <div class="section">
+        <h2>Delete Calculation</h2>
+        <form onsubmit="deleteCalculation(event)">
+            <div class="form-group">
+                <label for="deleteId">Calculation ID:</label>
+                <input type="number" id="deleteId" required min="1">
+            </div>
+            <button type="submit" class="delete-btn">Delete Calculation</button>
+        </form>
+        <div id="deleteMessage" class="message" style="display: none;"></div>
+    </div>
+
+    <script>
+        // Check if user is logged in
+        function checkAuth() {
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                document.getElementById('authError').style.display = 'block';
+                // Hide all sections
+                const sections = document.querySelectorAll('.section');
+                sections.forEach(section => section.style.display = 'none');
+                return false;
+            }
+            return true;
+        }
+
+        // Get authorization headers
+        function getAuthHeaders() {
+            const token = localStorage.getItem('access_token');
+            return {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            };
+        }
+
+        // Logout function
+        function logout() {
+            localStorage.removeItem('access_token');
+            window.location.href = '/login';
+        }
+
+        // Display message helper
+        function showMessage(elementId, message, isError = false) {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = 'message ' + (isError ? 'error-message' : 'success');
+            element.style.display = 'block';
+            setTimeout(() => {
+                element.style.display = 'none';
+            }, 5000);
+        }
+
+        // Validate division by zero
+        function validateDivision(b, type) {
+            if (type === 'Divide' && parseFloat(b) === 0) {
+                return 'Cannot divide by zero';
+            }
+            return null;
+        }
+
+        // Add Calculation
+        async function addCalculation(event) {
+            event.preventDefault();
+            
+            const a = document.getElementById('addA').value;
+            const b = document.getElementById('addB').value;
+            const type = document.getElementById('addType').value;
+
+            // Client-side validation
+            const divError = validateDivision(b, type);
+            if (divError) {
+                showMessage('addMessage', divError, true);
+                return;
+            }
+
+            try {
+                const response = await fetch('/calculations', {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ a: parseFloat(a), b: parseFloat(b), type: type })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showMessage('addMessage', `Calculation created successfully! Result: ${data.result}`);
+                    document.getElementById('addForm').reset();
+                    browseCalculations(); // Refresh the list
+                } else {
+                    showMessage('addMessage', `Error: ${data.detail}`, true);
+                }
+            } catch (error) {
+                showMessage('addMessage', `Error: ${error.message}`, true);
+            }
+        }
+
+        // Browse Calculations
+        async function browseCalculations() {
+            try {
+                const response = await fetch('/calculations', {
+                    method: 'GET',
+                    headers: getAuthHeaders()
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    if (data.length === 0) {
+                        showMessage('browseMessage', 'No calculations found. Add some calculations to see them here.');
+                        document.getElementById('calculationsTable').style.display = 'none';
+                    } else {
+                        const tbody = document.getElementById('calculationsBody');
+                        tbody.innerHTML = '';
+                        
+                        data.forEach(calc => {
+                            const row = tbody.insertRow();
+                            row.innerHTML = `
+                                <td>${calc.id}</td>
+                                <td>${calc.a}</td>
+                                <td>${calc.b}</td>
+                                <td>${calc.type}</td>
+                                <td>${calc.result !== null ? calc.result : 'N/A'}</td>
+                                <td>
+                                    <button class="action-btn edit-btn" onclick="loadForEdit(${calc.id}, ${calc.a}, ${calc.b}, '${calc.type}')">Edit</button>
+                                    <button class="action-btn delete-btn" onclick="deleteById(${calc.id})">Delete</button>
+                                </td>
+                            `;
+                        });
+                        
+                        document.getElementById('calculationsTable').style.display = 'table';
+                        showMessage('browseMessage', `Found ${data.length} calculation(s)`);
+                    }
+                } else {
+                    showMessage('browseMessage', `Error: ${data.detail}`, true);
+                }
+            } catch (error) {
+                showMessage('browseMessage', `Error: ${error.message}`, true);
+            }
+        }
+
+        // Read Specific Calculation
+        async function readCalculation(event) {
+            event.preventDefault();
+            
+            const id = document.getElementById('readId').value;
+
+            try {
+                const response = await fetch(`/calculations/${id}`, {
+                    method: 'GET',
+                    headers: getAuthHeaders()
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    document.getElementById('readResult').innerHTML = `
+                        <strong>Calculation Details:</strong><br>
+                        ID: ${data.id}<br>
+                        First Number: ${data.a}<br>
+                        Second Number: ${data.b}<br>
+                        Operation: ${data.type}<br>
+                        Result: ${data.result !== null ? data.result : 'N/A'}
+                    `;
+                    showMessage('readMessage', 'Calculation retrieved successfully');
+                } else {
+                    showMessage('readMessage', `Error: ${data.detail}`, true);
+                    document.getElementById('readResult').innerHTML = '';
+                }
+            } catch (error) {
+                showMessage('readMessage', `Error: ${error.message}`, true);
+            }
+        }
+
+        // Load calculation data for editing
+        function loadForEdit(id, a, b, type) {
+            document.getElementById('editId').value = id;
+            document.getElementById('editA').value = a;
+            document.getElementById('editB').value = b;
+            document.getElementById('editType').value = type;
+            
+            // Scroll to edit section
+            document.getElementById('editForm').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Update Calculation
+        async function updateCalculation(event) {
+            event.preventDefault();
+            
+            const id = document.getElementById('editId').value;
+            const a = document.getElementById('editA').value;
+            const b = document.getElementById('editB').value;
+            const type = document.getElementById('editType').value;
+
+            // Client-side validation
+            const divError = validateDivision(b, type);
+            if (divError) {
+                showMessage('editMessage', divError, true);
+                return;
+            }
+
+            try {
+                const response = await fetch(`/calculations/${id}`, {
+                    method: 'PUT',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ a: parseFloat(a), b: parseFloat(b), type: type })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showMessage('editMessage', `Calculation updated successfully! New result: ${data.result}`);
+                    document.getElementById('editForm').reset();
+                    browseCalculations(); // Refresh the list
+                } else {
+                    showMessage('editMessage', `Error: ${data.detail}`, true);
+                }
+            } catch (error) {
+                showMessage('editMessage', `Error: ${error.message}`, true);
+            }
+        }
+
+        // Delete Calculation (from form)
+        async function deleteCalculation(event) {
+            event.preventDefault();
+            
+            const id = document.getElementById('deleteId').value;
+            await performDelete(id, 'deleteMessage');
+            document.getElementById('deleteId').value = '';
+        }
+
+        // Delete by ID (from table)
+        async function deleteById(id) {
+            if (!confirm(`Are you sure you want to delete calculation #${id}?`)) {
+                return;
+            }
+            await performDelete(id, 'browseMessage');
+        }
+
+        // Perform delete operation
+        async function performDelete(id, messageElement) {
+            try {
+                const response = await fetch(`/calculations/${id}`, {
+                    method: 'DELETE',
+                    headers: getAuthHeaders()
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showMessage(messageElement, data.message || 'Calculation deleted successfully');
+                    browseCalculations(); // Refresh the list
+                } else {
+                    showMessage(messageElement, `Error: ${data.detail}`, true);
+                }
+            } catch (error) {
+                showMessage(messageElement, `Error: ${error.message}`, true);
+            }
+        }
+
+        // Initialize page
+        window.onload = function() {
+            if (checkAuth()) {
+                browseCalculations();
+            }
+        };
+    </script>
+</body>
+</html>

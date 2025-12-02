@@ -109,6 +109,14 @@ async def login_page(request: Request):
     """
     return templates.TemplateResponse("login.html", {"request": request})
 
+
+@app.get("/calculations-page")
+async def calculations_page(request: Request):
+    """
+    Serve the calculations management page.
+    """
+    return templates.TemplateResponse("calculations.html", {"request": request})
+
 @app.post("/add", response_model=OperationResponse, responses={400: {"model": ErrorResponse}})
 async def add_route(operation: OperationRequest):
     """
