@@ -55,4 +55,6 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/is218-module-10:${{ github.sha }}
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/is218-module-11:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/is218-module-11:${{ github.sha }}
