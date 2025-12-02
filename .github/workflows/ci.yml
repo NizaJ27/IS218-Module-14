@@ -42,8 +42,8 @@ jobs:
         run: |
           for i in {1..30}; do pg_isready -h localhost -p 5432 -U postgres && break || sleep 1; done
 
-      - name: Run tests
-        run: pytest -q
+      - name: Run tests (unit + integration)
+        run: pytest -q tests/unit tests/integration
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
