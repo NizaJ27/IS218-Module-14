@@ -3,8 +3,6 @@
 import subprocess
 import time
 import pytest
-from playwright.sync_api import sync_playwright
-import requests
 
 @pytest.fixture(scope='session')
 def fastapi_server():
@@ -16,6 +14,12 @@ def fastapi_server():
     
     # Define the URL to check if the server is up
     server_url = 'http://127.0.0.1:8000/'
+
+    # Import requests lazily so tests that don't need it won't fail collection
+    try:
+        import requests
+    except Exception:
+        pytest.skip("requests not available in this environment")
     
     # Wait for the server to start by polling the root endpoint
     timeout = 30  # seconds
@@ -52,6 +56,13 @@ def playwright_instance_fixture():
     """
     Fixture to manage Playwright's lifecycle.
     """
+    # Lazy import Playwright to avoid failing test collection when Playwright
+    # is not installed in the test environment (some CI runners may skip e2e).
+    try:
+        from playwright.sync_api import sync_playwright
+    except Exception:
+        pytest.skip("playwright not available in this environment")
+
     with sync_playwright() as p:
         yield p
 
