@@ -604,6 +604,157 @@ docker run -p 8000:8000 <your-dockerhub-username>/is218-module-12:latest
 
 **Docker Hub**: Replace with your published image, e.g. `docker.io/<your-username>/is218-module-12`.
 
+## Module 14 — User-Specific Calculation BREAD with JWT Authentication and E2E Tests
+
+This module implements user-specific calculation management with JWT-authenticated BREAD operations and comprehensive Playwright E2E testing.
+
+### Features Implemented
+
+- **JWT-Protected Calculation Endpoints**:
+  - POST `/calculations` - Add new calculations (authenticated, user-specific)
+  - GET `/calculations` - Browse user's calculations with pagination (authenticated)
+  - GET `/calculations/{id}` - Read specific user calculation (authenticated)
+  - PUT `/calculations/{id}` - Edit user's calculation (authenticated)
+  - DELETE `/calculations/{id}` - Delete user's calculation (authenticated)
+
+- **Front-End Calculations Management**:
+  - GET `/calculations-page` - Full-featured calculations management interface
+  - Client-side validation for all BREAD operations
+  - Division by zero validation
+  - JWT token storage and automatic authorization
+  - Real-time feedback for all operations
+
+- **Comprehensive E2E Tests**:
+  - Positive tests: Successful BREAD operations
+  - Negative tests: Division by zero, unauthorized access, not found errors
+  - Authentication tests: Login required, token validation
+  - User isolation: Users can only access their own calculations
+
+### Running the Application
+
+1. **Install dependencies**:
+```bash
+pip install -r requirements.txt
+```
+
+2. **Start the FastAPI server**:
+```bash
+python main.py
+```
+
+3. **Access the application**:
+   - Home page: `http://localhost:8000`
+   - Registration: `http://localhost:8000/register`
+   - Login: `http://localhost:8000/login`
+   - Calculations: `http://localhost:8000/calculations-page` (requires login)
+
+### Running Tests Locally
+
+1. **Run unit tests**:
+```bash
+pytest tests/unit/ -v
+```
+
+2. **Run integration tests** (requires writable database):
+```bash
+pytest tests/integration/ -v
+```
+
+3. **Install Playwright and run E2E tests**:
+```bash
+playwright install --with-deps chromium
+pytest tests/e2e/ -v
+```
+
+4. **Run all tests with coverage**:
+```bash
+pytest --cov=app --cov-report=html
+```
+
+### Using the Calculations Feature
+
+1. **Register and Login**:
+   - Navigate to `/register` and create an account
+   - Login at `/login` to receive a JWT token
+   - Token is automatically stored in browser localStorage
+
+2. **Manage Calculations**:
+   - Navigate to `/calculations-page`
+   - **Add**: Enter two numbers and select an operation
+   - **Browse**: View all your calculations in a table
+   - **Read**: Enter a calculation ID to view details
+   - **Edit**: Click Edit button or enter ID to update a calculation
+   - **Delete**: Click Delete button or enter ID to remove a calculation
+
+3. **API Usage** (with JWT token):
+```bash
+# Register and get token
+curl -X POST http://localhost:8000/users/register \
+  -H "Content-Type: application/json" \
+  -d '{"username":"testuser","email":"test@example.com","password":"password123"}'
+
+# Login to get token
+TOKEN=$(curl -X POST http://localhost:8000/users/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"testuser","password":"password123"}' \
+  | jq -r '.access_token')
+
+# Create calculation
+curl -X POST http://localhost:8000/calculations \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"a":10,"b":5,"type":"Add"}'
+
+# Browse calculations
+curl -X GET http://localhost:8000/calculations \
+  -H "Authorization: Bearer $TOKEN"
+
+# Read specific calculation
+curl -X GET http://localhost:8000/calculations/1 \
+  -H "Authorization: Bearer $TOKEN"
+
+# Update calculation
+curl -X PUT http://localhost:8000/calculations/1 \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"a":20,"b":10,"type":"Multiply"}'
+
+# Delete calculation
+curl -X DELETE http://localhost:8000/calculations/1 \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+### Docker Hub Repository
+
+**Docker Hub Link**: [https://hub.docker.com/r/<your-dockerhub-username>/is218-module-14](https://hub.docker.com/r/<your-dockerhub-username>/is218-module-14)
+
+### Pulling and Running the Docker Image
+
+```bash
+docker pull <your-dockerhub-username>/is218-module-14:latest
+docker run -p 8000:8000 <your-dockerhub-username>/is218-module-14:latest
+```
+
+### CI/CD Pipeline
+
+The GitHub Actions workflow automatically:
+1. Sets up PostgreSQL database for testing
+2. Runs unit and integration tests
+3. Installs Playwright and runs E2E tests
+4. Builds and pushes Docker image to Docker Hub on success
+
+### Key Implementation Details
+
+- **User Isolation**: All calculation endpoints filter by the authenticated user's ID
+- **JWT Authentication**: Uses `get_current_user` dependency to extract user info from Bearer tokens
+- **Client-Side Validation**: JavaScript validates inputs before API calls
+- **Error Handling**: Comprehensive error messages for all failure scenarios
+- **E2E Testing**: Playwright tests cover all user workflows end-to-end
+
+---
+
+## Previous Modules
+
 ## Module 9 — PostgreSQL & pgAdmin (FastAPI + Postgres)
 
 Follow these steps to satisfy the Module 9 assignment requirements.
