@@ -11,14 +11,22 @@ from main import app
 @pytest.fixture(autouse=True)
 def setup_db():
     try:
-        from app.db import DATABASE_URL
+        from app.db import DATABASE_URL, engine
         if DATABASE_URL.startswith("sqlite") and "test_db.sqlite" in DATABASE_URL:
+            # Close all connections before removing file
+            engine.dispose()
             if os.path.exists("./test_db.sqlite"):
                 os.remove("./test_db.sqlite")
     except Exception:
         pass
     init_db()
     yield
+    # Clean up after each test
+    try:
+        from app.db import engine
+        engine.dispose()
+    except Exception:
+        pass
 
 
 def get_auth_token(client: TestClient) -> str:

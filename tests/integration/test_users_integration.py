@@ -12,16 +12,23 @@ def setup_db():
     # Ensure tables exist for the configured DATABASE_URL
     # If using the default sqlite file, remove it to start fresh between runs
     try:
-        from app.db import DATABASE_URL
+        from app.db import DATABASE_URL, engine
         if DATABASE_URL.startswith("sqlite") and "test_db.sqlite" in DATABASE_URL:
+            # Close all connections before removing file
+            engine.dispose()
             import os
-
             if os.path.exists("./test_db.sqlite"):
                 os.remove("./test_db.sqlite")
     except Exception:
         pass
     init_db()
     yield
+    # Clean up after each test
+    try:
+        from app.db import engine
+        engine.dispose()
+    except Exception:
+        pass
 
 
 def test_register_user_success():
