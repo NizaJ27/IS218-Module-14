@@ -289,7 +289,40 @@ This module implements JWT-based authentication for user registration and login,
   - UI feedback verification
   - Server response validation
 
-### Running the Front-End
+---
+
+## Module 14 — Calculation BREAD Operations with User Authentication
+
+This module implements complete BREAD (Browse, Read, Edit, Add, Delete) endpoints for calculations with JWT authentication, ensuring users can only access their own calculations.
+
+### Features Implemented
+
+- **User-Specific Calculation Endpoints**:
+  - POST `/calculations` - Create a new calculation (authenticated)
+  - GET `/calculations` - Browse all calculations for logged-in user (authenticated)
+  - GET `/calculations/{id}` - Read specific calculation (authenticated, user-owned only)
+  - PUT `/calculations/{id}` - Update calculation (authenticated, user-owned only)
+  - DELETE `/calculations/{id}` - Delete calculation (authenticated, user-owned only)
+  - All endpoints require JWT Bearer token in Authorization header
+
+- **Front-End Calculations Page**:
+  - GET `/calculations-page` - Calculations management interface
+  - Add new calculations with operation selection (Add, Subtract, Multiply, Divide)
+  - Browse all user's calculations in a table
+  - Read specific calculation by ID
+  - Edit existing calculations
+  - Delete calculations with confirmation
+  - Client-side validation for division by zero
+  - Automatic token handling from localStorage
+  - Protected access (redirects to login if not authenticated)
+
+- **Comprehensive E2E Tests**:
+  - Positive scenarios for all BREAD operations
+  - Negative scenarios: division by zero, non-existent resources, unauthorized access
+  - Full workflow testing with registration, login, and calculation management
+  - Verification of UI feedback and server responses
+
+### Running the Application
 
 1. **Install dependencies**:
 ```bash
@@ -305,85 +338,156 @@ python main.py
    - Home page: `http://localhost:8000`
    - Registration: `http://localhost:8000/register`
    - Login: `http://localhost:8000/login`
+   - My Calculations: `http://localhost:8000/calculations-page` (requires login)
 
-### Running Playwright E2E Tests
+### Running Tests Locally
 
-1. **Install Playwright browsers**:
-```bash
-playwright install --with-deps chromium
-```
-
-2. **Run E2E tests**:
-```bash
-pytest tests/e2e/ -v
-```
-
-3. **Run all tests**:
+1. **Run all tests**:
 ```bash
 pytest -v
 ```
 
+2. **Run only unit tests**:
+```bash
+pytest tests/unit/ -v
+```
+
+3. **Run only E2E tests**:
+```bash
+# Install Playwright browsers first (one-time setup)
+playwright install --with-deps chromium
+
+# Run E2E tests
+pytest tests/e2e/ -v
+```
+
+4. **Run with coverage**:
+```bash
+pytest --cov=app --cov-report=html
+```
+
+### Using the Calculation BREAD Operations
+
+#### Via Web Interface:
+
+1. **Register and Login**:
+   - Navigate to `/register` and create an account
+   - Login at `/login`
+   - Token is automatically stored in browser
+
+2. **Navigate to Calculations**:
+   - Click "My Calculations" in navigation
+   - Or go directly to `/calculations-page`
+
+3. **Add Calculation**:
+   - Enter two numbers
+   - Select operation (Add, Sub, Multiply, Divide)
+   - Click "Add Calculation"
+   - Result is displayed and calculation is saved
+
+4. **Browse Calculations**:
+   - Click "Refresh List" to see all your calculations
+   - Table shows ID, operands, operation, and result
+   - Use action buttons to edit or delete
+
+5. **Read Specific Calculation**:
+   - Enter calculation ID
+   - Click "Get Calculation"
+   - Details are displayed below
+
+6. **Edit Calculation**:
+   - Use "Edit" button in table to auto-fill form
+   - Or manually enter calculation ID
+   - Update values and operation
+   - Click "Update Calculation"
+
+7. **Delete Calculation**:
+   - Click "Delete" button in table (with confirmation)
+   - Or enter ID in Delete section
+   - Calculation is permanently removed
+
+#### Via API (with JWT Token):
+
+**Get token first**:
+```bash
+# Register
+TOKEN=$(curl -X POST http://localhost:8000/users/register \
+  -H "Content-Type: application/json" \
+  -d '{"username":"testuser","email":"test@example.com","password":"password123"}' \
+  | jq -r '.access_token')
+
+# Or login
+TOKEN=$(curl -X POST http://localhost:8000/users/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"testuser","password":"password123"}' \
+  | jq -r '.access_token')
+```
+
+**Create calculation**:
+```bash
+curl -X POST http://localhost:8000/calculations \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"a":10,"b":5,"type":"Add"}'
+```
+
+**Browse calculations**:
+```bash
+curl -X GET http://localhost:8000/calculations \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+**Read specific calculation**:
+```bash
+curl -X GET http://localhost:8000/calculations/1 \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+**Update calculation**:
+```bash
+curl -X PUT http://localhost:8000/calculations/1 \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"a":20,"b":10,"type":"Multiply"}'
+```
+
+**Delete calculation**:
+```bash
+curl -X DELETE http://localhost:8000/calculations/1 \
+  -H "Authorization: Bearer $TOKEN"
+```
+
 ### Docker Hub Repository
 
-**Docker Hub Link**: [https://hub.docker.com/r/YOUR_USERNAME/is218-module-13](https://hub.docker.com/r/YOUR_USERNAME/is218-module-13)
+**Docker Hub Link**: [https://hub.docker.com/r/<your-dockerhub-username>/is218-module-14](https://hub.docker.com/r/<your-dockerhub-username>/is218-module-14)
 
-*Note: Replace `YOUR_USERNAME` with your actual Docker Hub username.*
+*Note: Replace `<your-dockerhub-username>` with your actual Docker Hub username.*
 
 ### Pulling and Running the Docker Image
 
 ```bash
-docker pull YOUR_USERNAME/is218-module-13:latest
-docker run -p 8000:8000 YOUR_USERNAME/is218-module-13:latest
+docker pull <your-dockerhub-username>/is218-module-14:latest
+docker run -p 8000:8000 <your-dockerhub-username>/is218-module-14:latest
 ```
+
+Then access the application at `http://localhost:8000`
 
 ### CI/CD Pipeline
 
 The GitHub Actions workflow (`.github/workflows/ci.yml`) automatically:
 1. Spins up PostgreSQL database
 2. Runs unit and integration tests
-3. Installs Playwright and runs E2E tests
+3. Installs Playwright and runs E2E tests for calculations BREAD operations
 4. Builds and pushes Docker image to Docker Hub (on success)
+5. Tags images with both `latest` and git SHA for versioning
 
-### Testing the Authentication Flow
+### Security Notes
 
-#### Using the Web Interface:
-
-1. **Register a new user**:
-   - Navigate to `/register`
-   - Fill in username (3-50 chars), valid email, password (6+ chars)
-   - Confirm password
-   - Submit form
-   - Token will be stored in localStorage
-
-2. **Login**:
-   - Navigate to `/login`
-   - Enter username and password
-   - Submit form
-   - Token will be stored in localStorage
-
-#### Using the API Directly:
-
-**Register**:
-```bash
-curl -X POST http://localhost:8000/users/register \
-  -H "Content-Type: application/json" \
-  -d '{"username":"testuser","email":"test@example.com","password":"password123"}'
-```
-
-**Login**:
-```bash
-curl -X POST http://localhost:8000/users/login \
-  -H "Content-Type: application/json" \
-  -d '{"username":"testuser","password":"password123"}'
-```
-
-Both endpoints return a JWT token in the format:
-```json
-{
-  "access_token": "eyJ0eXAiOiJKV1QiLCJhbGc...",
-  "token_type": "bearer"
-}
-```
+- All calculation endpoints require JWT authentication
+- Users can only access their own calculations
+- Tokens expire after 30 minutes (configurable in `app/security.py`)
+- Passwords are hashed using pbkdf2_sha256
+- Token secret should be changed in production (set via environment variable)
 
 ---
 
