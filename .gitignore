@@ -5,3 +5,5 @@ __pycache__/
 .coverage
 .pytest_cache
 htmlcov
+test_db.sqlite
+*.sqlite
