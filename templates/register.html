@@ -103,33 +103,33 @@
                 <input type="text" id="username" name="username" minlength="3" maxlength="50" required>
                 <div class="error-message" id="usernameError">Username must be between 3 and 50 characters</div>
             </div>
-            
+
             <div class="form-group">
                 <label for="email">Email</label>
                 <input type="email" id="email" name="email" required>
                 <div class="error-message" id="emailError">Please enter a valid email address</div>
             </div>
-            
+
             <div class="form-group">
                 <label for="password">Password</label>
                 <input type="password" id="password" name="password" minlength="6" required>
                 <div class="error-message" id="passwordError">Password must be at least 6 characters long</div>
             </div>
-            
+
             <div class="form-group">
                 <label for="confirmPassword">Confirm Password</label>
                 <input type="password" id="confirmPassword" name="confirmPassword" required>
                 <div class="error-message" id="confirmPasswordError">Passwords do not match</div>
             </div>
-            
+
             <button type="submit" id="submitButton">Register</button>
-            
+
             <div class="success-message" id="successMessage">
                 Registration successful! Token stored. Redirecting to login...
             </div>
             <div class="server-error" id="serverError"></div>
         </form>
-        
+
         <div class="login-link">
             Already have an account? <a href="/login">Login here</a>
         </div>
@@ -152,7 +152,7 @@
         function validateUsername() {
             const username = usernameInput.value;
             const error = document.getElementById('usernameError');
-            
+
             if (username.length < 3 || username.length > 50) {
                 error.style.display = 'block';
                 return false;
@@ -164,7 +164,7 @@
         function validateEmail() {
             const email = emailInput.value;
             const error = document.getElementById('emailError');
-            
+
             if (!emailRegex.test(email)) {
                 error.style.display = 'block';
                 return false;
@@ -176,7 +176,7 @@
         function validatePassword() {
             const password = passwordInput.value;
             const error = document.getElementById('passwordError');
-            
+
             if (password.length < 6) {
                 error.style.display = 'block';
                 return false;
@@ -189,7 +189,7 @@
             const password = passwordInput.value;
             const confirmPassword = confirmPasswordInput.value;
             const error = document.getElementById('confirmPasswordError');
-            
+
             if (password !== confirmPassword) {
                 error.style.display = 'block';
                 return false;
@@ -208,25 +208,25 @@
         // Form submission
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
+
             // Hide previous messages
             successMessage.style.display = 'none';
             serverError.style.display = 'none';
-            
+
             // Validate all fields
             const isUsernameValid = validateUsername();
             const isEmailValid = validateEmail();
             const isPasswordValid = validatePassword();
             const isConfirmPasswordValid = validateConfirmPassword();
-            
+
             if (!isUsernameValid || !isEmailValid || !isPasswordValid || !isConfirmPasswordValid) {
                 return;
             }
-            
+
             // Disable submit button
             submitButton.disabled = true;
             submitButton.textContent = 'Registering...';
-            
+
             try {
                 const response = await fetch('/users/register', {
                     method: 'POST',
@@ -239,24 +239,34 @@
                         password: passwordInput.value
                     })
                 });
-                
-                const data = await response.json();
-                
+
+                // Check if response is JSON
+                const contentType = response.headers.get('content-type');
+                let data;
+
+                if (contentType && contentType.includes('application/json')) {
+                    data = await response.json();
+                } else {
+                    // Non-JSON response (likely HTML error page)
+                    const text = await response.text();
+                    throw new Error('Server returned non-JSON response. Status: ' + response.status);
+                }
+
                 if (response.ok || response.status === 201 || response.status === 200) {
                     // Store the JWT token
                     localStorage.setItem('access_token', data.access_token);
-                    
+
                     // Show success message
                     successMessage.style.display = 'block';
                     form.reset();
-                    
+
                     // Redirect to login page after 2 seconds
                     setTimeout(() => {
                         window.location.href = '/login';
                     }, 2000);
                 } else {
                     // Show error message from server
-                    serverError.textContent = 'Error: ' + (data.detail || 'Registration failed');
+                    serverError.textContent = 'Error: ' + (data.detail || data.error || 'Registration failed');
                     serverError.style.display = 'block';
                     submitButton.disabled = false;
                     submitButton.textContent = 'Register';
