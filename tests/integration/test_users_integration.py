@@ -51,7 +51,7 @@ def test_register_duplicate_user():
     payload = {"username": "testuser2", "email": "testuser2@example.com", "password": "password123"}
     r1 = client.post("/users/register", json=payload)
     assert r1.status_code == 200
-    
+
     # Attempt duplicate
     r2 = client.post("/users/register", json=payload)
     assert r2.status_code == 400
@@ -73,7 +73,7 @@ def test_login_user_success():
     # First register a user
     register_payload = {"username": "loginuser1", "email": "loginuser1@example.com", "password": "mypassword"}
     client.post("/users/register", json=register_payload)
-    
+
     # Now login
     login_payload = {"username": "loginuser1", "password": "mypassword"}
     r = client.post("/users/login", json=login_payload)
@@ -103,7 +103,7 @@ def test_login_invalid_password():
     # Register a user
     register_payload = {"username": "loginuser2", "email": "loginuser2@example.com", "password": "correctpassword"}
     client.post("/users/register", json=register_payload)
-    
+
     # Try to login with wrong password
     login_payload = {"username": "loginuser2", "password": "wrongpassword"}
     r = client.post("/users/login", json=login_payload)

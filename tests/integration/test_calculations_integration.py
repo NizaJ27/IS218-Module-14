@@ -35,11 +35,11 @@ def get_auth_token(client: TestClient) -> str:
     username = f"testuser{timestamp}"
     email = f"test{timestamp}@example.com"
     password = "password123"
-    
+
     # Register user
     register_payload = {"username": username, "email": email, "password": password}
     response = client.post("/users/register", json=register_payload)
-    
+
     if response.status_code == 200:
         return response.json()["access_token"]
     else:
@@ -105,7 +105,7 @@ def test_browse_calculations_via_api():
     # Create some calculations first
     client.post("/calculations", json={"a": 5, "b": 3, "type": "Add"}, headers=headers)
     client.post("/calculations", json={"a": 10, "b": 2, "type": "Multiply"}, headers=headers)
-    
+
     r = client.get("/calculations", headers=headers)
     assert r.status_code == 200
     data = r.json()
@@ -120,7 +120,7 @@ def test_read_calculation_via_api():
     # Create a calculation
     create_resp = client.post("/calculations", json={"a": 8, "b": 2, "type": "Divide"}, headers=headers)
     calc_id = create_resp.json()["id"]
-    
+
     # Read it back
     r = client.get(f"/calculations/{calc_id}", headers=headers)
     assert r.status_code == 200
@@ -146,7 +146,7 @@ def test_edit_calculation_via_api():
     # Create a calculation
     create_resp = client.post("/calculations", json={"a": 5, "b": 3, "type": "Add"}, headers=headers)
     calc_id = create_resp.json()["id"]
-    
+
     # Update it
     update_payload = {"a": 10, "b": 2, "type": "Sub"}
     r = client.put(f"/calculations/{calc_id}", json=update_payload, headers=headers)
@@ -174,12 +174,12 @@ def test_delete_calculation_via_api():
     # Create a calculation
     create_resp = client.post("/calculations", json={"a": 7, "b": 3, "type": "Multiply"}, headers=headers)
     calc_id = create_resp.json()["id"]
-    
+
     # Delete it
     r = client.delete(f"/calculations/{calc_id}", headers=headers)
     assert r.status_code == 200
     assert "deleted" in r.json()["message"].lower()
-    
+
     # Verify it's gone
     get_resp = client.get(f"/calculations/{calc_id}", headers=headers)
     assert get_resp.status_code == 404
