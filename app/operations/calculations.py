@@ -61,13 +61,13 @@ def update_calculation(db: Session, calc_id: int, calc_in: schemas.CalculationCr
     calc = get_calculation_by_id(db, calc_id, user_id)
     if not calc:
         return None
-    
+
     # Update fields
     calc.a = calc_in.a
     calc.b = calc_in.b
     calc.type = calc_in.type
     calc.result = compute_result(calc_in)
-    
+
     try:
         db.commit()
         db.refresh(calc)
@@ -82,7 +82,7 @@ def delete_calculation(db: Session, calc_id: int, user_id: Optional[int] = None)
     calc = get_calculation_by_id(db, calc_id, user_id)
     if not calc:
         return False
-    
+
     db.delete(calc)
     db.commit()
     return True
